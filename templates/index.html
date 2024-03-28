@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Emotion Detection</title>
+    <!-- Link to your CSS stylesheet -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        /* CSS for setting the background color and centering the title */
+        body {
+            background-color: gray; /* You can replace #f0f0f0 with your desired background color */
+            text-align: center;
+        }
+        h1 {
+            font-size: 36px; /* Adjust the font size as needed */
+            padding: 20px; /* Add padding to create space around the title */
+        }
+        #camera-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 auto; /* Center the camera container horizontally */
+            max-width: 800px; /* Set a maximum width for the camera container */
+            padding: 20px; /* Add padding around the camera container */
+        }
+        video {
+            width: 100%; /* Make the video element take up the entire container */
+        }
+        #capture-button {
+            font-size: 24px; /* Adjust the font size for the button text */
+            padding: 15px 30px; /* Increase padding to make the button bigger */
+            background-color: red; /* Button background color */
+            color: black; /* Button text color */
+            border: none;
+            cursor: pointer;
+        }
+        #image-canvas {
+            display: none; /* Hide the canvas by default */
+        }
+    </style>
+</head>
+<body>
+    <h1>Song Recommendation using Facial Expression</h1>
+    <div id="camera-container">
+        <!-- Video element for camera preview -->
+        <video id="camera-preview" autoplay></video>
+        <!-- Button to capture image -->
+        <button id="capture-button">Capture</button>
+    </div>
+    <!-- Hidden canvas element to capture and process the image -->
+    <canvas id="image-canvas"></canvas>
+    <br>
+    <!-- Form to submit the captured image for emotion prediction -->
+    <form id="emotion-form" action="/predict" method="post" enctype="multipart/form-data" style="display: none;">
+        <input type="hidden" name="emotion_image" value="">
+        <button type="submit">Predict Emotion</button>
+    </form>
+    <br>
+    <!-- Display predicted emotion and recommended music -->
+    {% if predicted_emotion %}
+    <p>Predicted Emotion: {{ predicted_emotion }}</p>
+    <!-- Display the predicted image -->
+    <img src="{{ url_for('static', filename='predicted_image.jpg') }}" alt="Predicted Emotion">
+    <br>
+    <h2>Recommended Music:</h2>
+    <ul>
+        <!-- Iterate through recommended music files -->
+        {% for music_file in music_files %}
+        <li>
+            <!-- Clickable link to play the music -->
+            <a href="#" onclick="playSong('{{ music_file }}');">{{ music_file }}</a>
+            <!-- Audio element for playing the music -->
+            <audio id="{{ music_file }}" controls>
+                <!-- Set the source of the audio file -->
+                <source src="{{ url_for('static', filename='music/' ~ predicted_emotion.lower() ~ '/' ~ music_file) }}" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    <!-- JavaScript code for accessing the camera and capturing an image -->
+    <script>
+        const cameraContainer = document.getElementById('camera-container');
+        const cameraPreview = document.getElementById('camera-preview');
+        const captureButton = document.getElementById('capture-button');
+        const imageCanvas = document.getElementById('image-canvas');
+        const emotionForm = document.getElementById('emotion-form');
+        const emotionImageInput = document.querySelector('input[name="emotion_image"]');
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                cameraPreview.srcObject = stream;
+            } catch (error) {
+                console.error('Error accessing the camera:', error);
+            }
+        }
+        captureButton.addEventListener('click', () => {
+            const context = imageCanvas.getContext('2d');
+            imageCanvas.width = cameraContainer.offsetWidth; // Set canvas width to match camera container
+            imageCanvas.height = cameraContainer.offsetHeight; // Set canvas height to match camera container
+            context.drawImage(cameraPreview, 0, 0, imageCanvas.width, imageCanvas.height);
+            // Convert the captured image to data URL
+            const imageDataURL = imageCanvas.toDataURL('image/jpeg');
+            emotionImageInput.value = imageDataURL;
+            // Hide the camera preview and show the form
+            cameraContainer.style.display = 'none';
+            emotionForm.style.display = 'block';
+        });
+        // Initialize the camera when the page loads
+        window.addEventListener('load', setupCamera);
+        // Function to play a song (you need to implement this)
+        function playSong(songName) {
+            // Add logic to play the selected song here
+        }
+    </script>
+</body>
+</html>
